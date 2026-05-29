@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NetRecon — Network Reconnaissance Tool</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #080c10;
+      --bg2:       #0d1117;
+      --bg3:       #111820;
+      --border:    #1e3a2e;
+      --accent:    #00ff88;
+      --accent2:   #00c4ff;
+      --accent3:   #ff6b35;
+      --warn:      #ffd166;
+      --danger:    #ff4757;
+      --text:      #c9d8c5;
+      --dim:       #4a6a55;
+      --mono:      'Share Tech Mono', monospace;
+      --sans:      'Rajdhani', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grid overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,136,0.012) 2px, rgba(0,255,136,0.012) 4px),
+        repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,255,136,0.008) 40px, rgba(0,255,136,0.008) 41px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrap { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* Header */
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+      margin-bottom: 40px;
+    }
+    .logo {
+      font-family: var(--mono);
+      font-size: 1.5rem;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+    .logo span { color: var(--accent2); }
+    .tagline { font-size: 0.8rem; color: var(--dim); letter-spacing: 3px; text-transform: uppercase; margin-top: 2px; }
+
+    /* Disclaimer */
+    .disclaimer {
+      background: rgba(255,71,87,0.08);
+      border: 1px solid rgba(255,71,87,0.3);
+      border-left: 3px solid var(--danger);
+      padding: 10px 16px;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: #ff8a94;
+      margin-bottom: 32px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Scan form */
+    .scan-form {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--accent);
+      padding: 28px 32px;
+      margin-bottom: 32px;
+    }
+    .form-title {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .input-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+    .input-group { flex: 1; min-width: 220px; }
+    .input-group label {
+      display: block;
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin-bottom: 8px;
+      font-family: var(--mono);
+    }
+    .input-group input {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-bottom: 2px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 1rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .input-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px rgba(0,255,136,0.15);
+    }
+    .input-group input::placeholder { color: var(--dim); }
+
+    .module-row { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .module-row label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.78rem; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--text); cursor: pointer; font-family: var(--mono);
+    }
+    .module-row input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; }
+
+    .btn-scan {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      font-family: var(--mono);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 12px 32px;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.2s;
+      white-space: nowrap;
+      margin-top: 20px;
+    }
+    .btn-scan:hover { background: #00e07a; box-shadow: 0 0 20px rgba(0,255,136,0.35); }
+    .btn-scan:disabled { background: var(--dim); color: #222; cursor: not-allowed; box-shadow: none; }
+
+    .btn-export {
+      background: transparent;
+      color: var(--accent2);
+      border: 1px solid var(--accent2);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      padding: 8px 20px;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.2s;
+    }
+    .btn-export:hover { background: rgba(0,196,255,0.1); box-shadow: 0 0 16px rgba(0,196,255,0.25); }
+
+    /* Progress  */
+    #progress-section { display: none; margin-bottom: 32px; }
+    .progress-header {
+      display: flex; justify-content: space-between; align-items: center;
+      font-family: var(--mono); font-size: 0.75rem; color: var(--accent2);
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .progress-bar-track {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      height: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      width: 0%;
+      transition: width 0.4s ease;
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .log-terminal {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      padding: 12px 16px;
+      margin-top: 12px;
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      color: var(--accent);
+      max-height: 150px;
+      overflow-y: auto;
+      line-height: 1.7;
+    }
+    .log-terminal .log-line { animation: fadein 0.3s ease; }
+    @keyframes fadein { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; } }
+
+    /* Results */
+    #results-section { display: none; }
+    .results-header {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; }
+
+    .result-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      animation: slideup 0.4s ease both;
+    }
+    @keyframes slideup { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; } }
+    .result-card:nth-child(1) { animation-delay: 0.05s; }
+    .result-card:nth-child(2) { animation-delay: 0.1s; }
+    .result-card:nth-child(3) { animation-delay: 0.15s; }
+    .result-card:nth-child(4) { animation-delay: 0.2s; }
+    .result-card:nth-child(5) { animation-delay: 0.25s; }
+
+    .card-header {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent2);
+    }
+    .card-icon { font-size: 1rem; }
+    .card-body { padding: 16px; }
+
+    /* Ports */
+    .port-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 0.78rem; }
+    .port-table th {
+      text-align: left; color: var(--dim); letter-spacing: 2px;
+      font-size: 0.65rem; padding: 0 8px 8px 0; border-bottom: 1px solid var(--border);
+    }
+    .port-table td { padding: 6px 8px 6px 0; border-bottom: 1px solid rgba(30,58,46,0.4); vertical-align: top; }
+    .port-num { color: var(--accent); font-weight: 700; }
+    .service-tag {
+      display: inline-block;
+      background: rgba(0,196,255,0.1);
+      border: 1px solid rgba(0,196,255,0.2);
+      color: var(--accent2);
+      font-size: 0.68rem;
+      padding: 1px 6px;
+      letter-spacing: 1px;
+    }
+    .risk-badge {
+      display: inline-block;
+      background: rgba(255,107,53,0.1);
+      border: 1px solid rgba(255,107,53,0.3);
+      color: var(--accent3);
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+    .no-ports { color: var(--dim); font-family: var(--mono); font-size: 0.8rem; }
+
+    /* KV pairs */
+    .kv-list { font-family: var(--mono); font-size: 0.78rem; }
+    .kv-row { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid rgba(30,58,46,0.3); flex-wrap: wrap; }
+    .kv-key { color: var(--dim); min-width: 140px; font-size: 0.72rem; letter-spacing: 1px; flex-shrink: 0; }
+    .kv-val { color: var(--text); word-break: break-all; }
+    .kv-val.good { color: var(--accent); }
+    .kv-val.warn { color: var(--warn); }
+    .kv-val.bad  { color: var(--danger); }
+
+    /* Header score */
+    .score-display {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+    }
+    .score-grade {
+      font-family: var(--mono);
+      font-size: 3rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .grade-A { color: var(--accent); }
+    .grade-B { color: var(--accent2); }
+    .grade-C { color: var(--warn); }
+    .grade-D, .grade-F { color: var(--danger); }
+
+    .score-info { font-size: 0.78rem; color: var(--dim); font-family: var(--mono); }
+    .score-pct { font-size: 1.2rem; color: var(--text); }
+
+    .header-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .htag {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      padding: 3px 8px;
+      letter-spacing: 1px;
+    }
+    .htag.present { background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3); color: var(--accent); }
+    .htag.missing { background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.3); color: var(--danger); }
+
+    /* DNS records */
+    .dns-type { color: var(--accent2); font-family: var(--mono); font-size: 0.72rem; letter-spacing: 2px; margin-top: 12px; margin-bottom: 4px; }
+    .dns-val { font-family: var(--mono); font-size: 0.75rem; color: var(--text); padding: 2px 0; word-break: break-all; }
+
+    /* SSL */
+    .ssl-days {
+      font-family: var(--mono);
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .ssl-warn { color: var(--warn) !important; }
+    .ssl-bad  { color: var(--danger) !important; }
+    .ssl-good { color: var(--accent) !important; }
+    .ssl-warning-list { margin-top: 10px; }
+    .ssl-warn-item {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--warn);
+      padding: 3px 0;
+    }
+    .ssl-warn-item::before { content: "⚠ "; }
+
+    /* Port summary badges */
+    .summary-badges { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .sbadge {
+      font-family: var(--mono); font-size: 0.72rem; padding: 4px 12px;
+      border: 1px solid; letter-spacing: 1px;
+    }
+    .sbadge.open { border-color: var(--accent); color: var(--accent); background: rgba(0,255,136,0.08); }
+    .sbadge.risk { border-color: var(--accent3); color: var(--accent3); background: rgba(255,107,53,0.08); }
+
+    .error-card { color: var(--danger); font-family: var(--mono); font-size: 0.8rem; padding: 8px 0; }
+
+    .banner-text {
+      font-family: var(--mono); font-size: 0.65rem;
+      color: var(--dim); font-style: italic;
+      margin-top: 2px; word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <div class="logo">NET<span>RECON</span></div>
+        <div class="tagline">Network Reconnaissance &amp; Vulnerability Scanner</div>
+      </div>
+      <div style="font-family: var(--mono); font-size: 0.65rem; color: var(--dim); text-align: right; line-height: 1.8;">
+        <span style="color:var(--accent);">STATUS:</span> ONLINE<br>
+        <span id="clock"></span>
+      </div>
+    </div>
+  </header>
+
+  <div class="disclaimer">
+    ⚠ FOR AUTHORIZED USE ONLY — Only scan systems you own or have explicit written permission to test.
+    Unauthorized scanning may violate computer fraud laws (CFAA, ECPA). This tool is for educational purposes.
+  </div>
+
+  <!-- Scan Form -->
+  <div class="scan-form">
+    <div class="form-title">// INITIALIZE SCAN</div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>Target Host / IP</label>
+        <input type="text" id="target" placeholder="example.com or 192.168.1.1" autocomplete="off" spellcheck="false"/>
+      </div>
+    </div>
+
+    <div class="module-row">
+      <span style="font-family:var(--mono);font-size:0.65rem;color:var(--dim);letter-spacing:2px;text-transform:uppercase;align-self:center;">Modules:</span>
+      <label><input type="checkbox" value="ip" checked> IP Info</label>
+      <label><input type="checkbox" value="ports" checked> Port Scan</label>
+      <label><input type="checkbox" value="whois" checked> WHOIS</label>
+      <label><input type="checkbox" value="headers" checked> HTTP Headers</label>
+      <label><input type="checkbox" value="dns" checked> DNS Enum</label>
+      <label><input type="checkbox" value="ssl"> SSL/TLS</label>
+    </div>
+
+    <button class="btn-scan" id="btn-scan" onclick="startScan()">[ EXECUTE SCAN ]</button>
+  </div>
+
+  <!-- Progress -->
+  <div id="progress-section">
+    <div class="progress-header">
+      <span>SCANNING...</span>
+      <span id="pct-label">0%</span>
+    </div>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progress-fill"></div>
+    </div>
+    <div class="log-terminal" id="log-output"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results-section">
+    <div class="results-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <span>// SCAN RESULTS</span>
+      <button class="btn-export" id="btn-export" style="display:none;" onclick="exportResults()">[ EXPORT JSON ]</button>
+    </div>
+    <div class="result-grid" id="result-grid"></div>
+  </div>
+</div>
+
+<script>
+let pollInterval = null;
+let currentJobId = null;
+
+function clock() {
+  document.getElementById("clock").textContent = new Date().toUTCString().replace("GMT","UTC");
+}
+clock(); setInterval(clock, 1000);
+
+function getCheckedModules() {
+  return [...document.querySelectorAll('.module-row input[type=checkbox]:checked')].map(c => c.value);
+}
+
+async function startScan() {
+  const target = document.getElementById("target").value.trim();
+  if (!target) { alert("Please enter a target."); return; }
+
+  const scanTypes = getCheckedModules();
+  if (!scanTypes.length) { alert("Select at least one module."); return; }
+
+  currentJobId = null;
+  document.getElementById("btn-export").style.display = "none";
+  document.getElementById("btn-scan").disabled = true;
+  document.getElementById("progress-section").style.display = "block";
+  document.getElementById("results-section").style.display = "none";
+  document.getElementById("result-grid").innerHTML = "";
+  document.getElementById("log-output").innerHTML = "";
+  setProgress(0);
+
+  try {
+    const res = await fetch("/api/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target, scan_types: scanTypes })
+    });
+    const { job_id, error } = await res.json();
+    if (error) { alert(error); reset(); return; }
+    pollInterval = setInterval(() => pollJob(job_id), 1500);
+  } catch(e) {
+    alert("Failed to start scan: " + e.message);
+    reset();
+  }
+}
+
+async function pollJob(jobId) {
+  try {
+    const res = await fetch(`/api/scan/${jobId}`);
+    const job = await res.json();
+
+    setProgress(job.progress || 0);
+    renderLogs(job.logs || []);
+
+    if (job.status === "complete") {
+      clearInterval(pollInterval);
+      setProgress(100);
+      currentJobId = jobId;
+      setTimeout(() => {
+        renderResults(job.results);
+        document.getElementById("results-section").style.display = "block";
+        document.getElementById("btn-export").style.display = "inline-block";
+        reset();
+      }, 600);
+    }
+  } catch(e) {
+    clearInterval(pollInterval);
+    reset();
+  }
+}
+
+function setProgress(pct) {
+  document.getElementById("progress-fill").style.width = pct + "%";
+  document.getElementById("pct-label").textContent = pct + "%";
+}
+
+let lastLogCount = 0;
+function renderLogs(logs) {
+  const el = document.getElementById("log-output");
+  for (let i = lastLogCount; i < logs.length; i++) {
+    const line = document.createElement("div");
+    line.className = "log-line";
+    line.textContent = logs[i];
+    el.appendChild(line);
+  }
+  lastLogCount = logs.length;
+  el.scrollTop = el.scrollHeight;
+}
+
+function reset() {
+  document.getElementById("btn-scan").disabled = false;
+  lastLogCount = 0;
+}
+
+function renderResults(results) {
+  const grid = document.getElementById("result-grid");
+  grid.innerHTML = "";
+
+  if (results.ip)      grid.appendChild(buildIpCard(results.ip));
+  if (results.ports)   grid.appendChild(buildPortsCard(results.ports));
+  if (results.headers) grid.appendChild(buildHeadersCard(results.headers));
+  if (results.whois)   grid.appendChild(buildWhoisCard(results.whois));
+  if (results.dns)     grid.appendChild(buildDnsCard(results.dns));
+  if (results.ssl)     grid.appendChild(buildSslCard(results.ssl));
+}
+
+function card(title, icon, bodyHTML) {
+  return Object.assign(document.createElement("div"), {
+    className: "result-card",
+    innerHTML: `
+      <div class="card-header">
+        <span class="card-title">${title}</span>
+        <span class="card-icon">${icon}</span>
+      </div>
+      <div class="card-body">${bodyHTML}</div>
+    `
+  });
+}
+
+function buildPortsCard(d) {
+  if (d.error) return card("Port Scan", "🔌", `<div class="error-card">${d.error}</div>`);
+  const badges = `<div class="summary-badges">
+    <span class="sbadge open">${d.total_open} OPEN</span>
+    ${d.risk_count ? `<span class="sbadge risk">${d.risk_count} RISKS</span>` : ""}
+    <span class="sbadge" style="border-color:var(--dim);color:var(--dim);">${d.total_scanned} SCANNED</span>
+  </div>`;
+
+  if (!d.open_ports || !d.open_ports.length)
+    return card("Port Scan", "🔌", badges + `<div class="no-ports">No open ports detected.</div>`);
+
+  const rows = d.open_ports.map(p => `
+    <tr>
+      <td class="port-num">${p.port}</td>
+      <td><span class="service-tag">${p.service}</span></td>
+      <td>${p.risk_note ? `<div class="risk-badge">${p.risk_note}</div>` : '<span style="color:var(--dim)">—</span>'}
+          ${p.banner ? `<div class="banner-text">↳ ${p.banner}</div>` : ""}
+      </td>
+    </tr>`).join("");
+
+  return card("Port Scan", "🔌", badges + `
+    <table class="port-table">
+      <thead><tr><th>PORT</th><th>SERVICE</th><th>NOTES</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`);
+}
+
+function buildHeadersCard(d) {
+  if (d.error) return card("HTTP Headers", "🛡️", `<div class="error-card">${d.error}</div>`);
+  const gradeClass = "grade-" + d.grade;
+  const scoreHTML = `<div class="score-display">
+    <div class="score-grade ${gradeClass}">${d.grade}</div>
+    <div>
+      <div class="score-pct">${d.security_score}%</div>
+      <div class="score-info">Security Headers Score</div>
+    </div>
+  </div>`;
+  const kvs = [
+    ["Status", d.status_code, d.status_code < 400 ? "good" : "bad"],
+    ["Server", d.server || "Hidden"],
+    ["X-Powered-By", d.x_powered_by || "Hidden"],
+    ["Content-Type", d.content_type],
+  ].map(([k, v, cls]) => kv(k, v, cls)).join("");
+
+  const hPresent = (d.security_headers_present || []).map(h => `<span class="htag present">✓ ${h}</span>`).join("");
+  const hMissing = (d.security_headers_missing || []).map(h => `<span class="htag missing">✗ ${h}</span>`).join("");
+
+  return card("HTTP Headers", "🛡️", scoreHTML + kvs + `<div class="header-tags">${hPresent}${hMissing}</div>`);
+}
+
+function buildWhoisCard(d) {
+  if (d.error) return card("WHOIS", "🌐", `<div class="error-card">${d.error}</div>`);
+  const fields = [
+    ["Registrar", d.registrar],
+    ["Created", d.creation_date],
+    ["Expires", d.expiration_date],
+    ["Org", d.org],
+    ["Country", d.country],
+    ["Name Servers", Array.isArray(d.name_servers) ? d.name_servers.join(", ") : d.name_servers],
+  ];
+  return card("WHOIS Lookup", "🌐", fields.filter(([,v]) => v && v !== "N/A").map(([k,v]) => kv(k, v)).join(""));
+}
+
+function buildDnsCard(d) {
+  if (d.error) return card("DNS Enumeration", "📡", `<div class="error-card">${d.error}</div>`);
+  const recs = d.records || {};
+  const types = ["A","AAAA","MX","NS","CNAME","TXT"];
+  let html = "";
+  types.forEach(t => {
+    if (recs[t] && recs[t].length) {
+      html += `<div class="dns-type">${t}</div>`;
+      recs[t].forEach(v => { html += `<div class="dns-val">${v}</div>`; });
+    }
+  });
+
+  // Email authentication summary
+  const ta = d.txt_analysis || {};
+  html += `<div style="margin-top:12px;">`;
+  html += kv("SPF",   ta.spf   ? "✓ Present" : "✗ Missing", ta.spf   ? "good" : "bad");
+  html += kv("DMARC", ta.dmarc ? "✓ Present" : "✗ Missing", ta.dmarc ? "good" : "bad");
+
+  // DKIM selectors
+  const dkim = d.dkim_records || [];
+  if (dkim.length) {
+    html += kv("DKIM", `✓ ${dkim.length} selector${dkim.length > 1 ? "s" : ""} found`, "good");
+    dkim.forEach(rec => {
+      html += `<div class="kv-row" style="padding-left:14px;">
+        <span class="kv-key" style="font-size:0.65rem;min-width:120px;">↳ ${rec.selector}</span>
+        <span class="kv-val" style="font-size:0.65rem;color:var(--dim);">${rec.record.slice(0,80)}${rec.record.length > 80 ? "…" : ""}</span>
+      </div>`;
+    });
+  } else {
+    html += kv("DKIM", "✗ No common selectors found", "bad");
+  }
+  html += `</div>`;
+
+  return card("DNS Enumeration", "📡", html || `<div class="no-ports">No records found.</div>`);
+}
+
+function buildIpCard(d) {
+  if (d.error && !d.ip) return card("IP Information", "🌍", `<div class="error-card">${d.error}</div>`);
+  if (d.error) return card("IP Information", "🌍",
+    kv("IP", d.ip, "good") + `<div class="error-card" style="margin-top:8px;">${d.error}</div>`
+  );
+
+  const flag = d.country_code ? countryFlag(d.country_code) : "";
+  const location = [d.city, d.region, d.country].filter(v => v && v !== "N/A").join(", ");
+
+  const fields = [
+    ["Organization", d.org],
+    ["ASN",          d.asn],
+    ["Location",     location ? location + (flag ? " " + flag : "") : null],
+    ["Timezone",     d.timezone],
+    ["Coordinates",  (d.latitude && d.longitude) ? `${d.latitude}, ${d.longitude}` : null],
+    ["Postal",       d.postal],
+  ];
+
+  return card("IP Information", "🌍",
+    `<div class="ssl-days ssl-good" style="font-size:1.4rem;margin-bottom:12px;">${d.ip}</div>` +
+    fields.filter(([, v]) => v && v !== "N/A").map(([k, v]) => kv(k, v)).join("")
+  );
+}
+
+function countryFlag(code) {
+  return [...code.toUpperCase()].map(c =>
+    String.fromCodePoint(c.charCodeAt(0) + 127397)
+  ).join("");
+}
+
+function buildSslCard(d) {
+  if (d.error) return card("SSL / TLS", "🔒", `<div class="error-card">${d.error}</div>`);
+  const daysClass = d.expired ? "ssl-bad" : (d.expiring_soon ? "ssl-warn" : "ssl-good");
+  const daysLabel = d.expired ? "EXPIRED" : (d.days_remaining + " days left");
+  const warns = (d.warnings || []).map(w => `<div class="ssl-warn-item">${w}</div>`).join("");
+  const fields = [
+    ["Common Name", d.common_name],
+    ["Issuer", d.issuer],
+    ["Protocol", d.protocol_version],
+    ["Valid From", d.valid_from],
+    ["Valid Until", d.valid_until],
+    ["SANs", (d.subject_alt_names || []).slice(0, 4).join(", ")],
+  ];
+  return card("SSL / TLS", "🔒", `
+    <div class="ssl-days ${daysClass}">${daysLabel}</div>
+    ${fields.filter(([,v]) => v).map(([k,v]) => kv(k,v)).join("")}
+    ${warns ? `<div class="ssl-warning-list">${warns}</div>` : ""}
+  `);
+}
+
+function kv(k, v, cls) {
+  return `<div class="kv-row">
+    <span class="kv-key">${k}</span>
+    <span class="kv-val${cls ? " " + cls : ""}">${v ?? "—"}</span>
+  </div>`;
+}
+
+function exportResults() {
+  if (!currentJobId) return;
+  window.location.href = `/api/scan/${currentJobId}/export`;
+}
+
+// Allow Enter key to trigger scan
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("target").addEventListener("keydown", e => {
+    if (e.key === "Enter") startScan();
+  });
+});
+</script>
+</body>
+</html>
